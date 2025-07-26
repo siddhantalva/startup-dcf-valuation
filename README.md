@@ -11,6 +11,3 @@ A browser-based tool to estimate enterprise value using a simplified Discounted 
 
 ## Usage
 Open `startup-dcf-valuation.html` in any browser. All calculations run locally in the browser.
-
-## License
-MIT License
