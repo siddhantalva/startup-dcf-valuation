@@ -1,13 +1,977 @@
-<!DOCTYPE html>
-<!-- The full HTML, CSS, and JS content from the user message -->
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Startup DCF Valuation Calculator</title>
-    <!-- Entire code has been preserved and is already human-readable -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Startup DCF Valuation Calculator</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#111a2e;
+      --muted:#8fa3c8;
+      --text:#e8efff;
+      --line:rgba(255,255,255,.10);
+      --good:#27c08a;
+      --bad:#ff5a6a;
+      --warn:#f7c948;
+      --accent:#6aa9ff;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:radial-gradient(1200px 600px at 20% 0%, rgba(106,169,255,.18), transparent 60%),
+                 radial-gradient(900px 500px at 90% 15%, rgba(39,192,138,.12), transparent 55%),
+                 var(--bg);
+      color:var(--text);
+      line-height:1.35;
+    }
+
+    header{
+      padding:28px 16px 8px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+    h1{
+      margin:0 0 6px;
+      font-size:clamp(20px, 3vw, 30px);
+      letter-spacing:.2px;
+    }
+    header p{margin:0; color:var(--muted)}
+
+    main{
+      max-width:1200px;
+      margin:0 auto;
+      padding:16px;
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    @media (max-width: 980px){
+      main{grid-template-columns:1fr}
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .card .card-h{
+      padding:14px 14px 12px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .pill{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid var(--line);
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.02);
+      white-space:nowrap;
+    }
+
+    .card .card-b{padding:14px}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+
+    @media (max-width: 420px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .field{
+      background:rgba(0,0,0,.25);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+    }
+
+    .field input, .field select{
+      width:100%;
+      background:transparent;
+      border:0;
+      outline:none;
+      color:var(--text);
+      font-size:14px;
+      font-family:var(--mono);
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .help{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:10px;
+    }
+
+    .btns{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    button{
+      cursor:pointer;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      font-family:var(--mono);
+      font-size:13px;
+    }
+
+    button:hover{background:rgba(255,255,255,.06)}
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+      padding:14px;
+      border-bottom:1px solid var(--line);
+    }
+
+    @media (max-width: 980px){
+      .kpis{grid-template-columns:1fr}
+    }
+
+    .kpi{
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(0,0,0,.20);
+    }
+
+    .kpi .t{font-size:12px; color:var(--muted); margin-bottom:8px}
+    .kpi .v{font-size:22px; font-family:var(--mono); letter-spacing:.2px}
+    .kpi .s{margin-top:6px; font-size:12px; color:var(--muted)}
+
+    .good{color:var(--good)}
+    .bad{color:var(--bad)}
+    .warn{color:var(--warn)}
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-family:var(--mono);
+      font-size:12.5px;
+    }
+
+    thead th{
+      position:sticky;
+      top:0;
+      background:rgba(17,26,46,.92);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--line);
+      z-index:1;
+    }
+
+    th, td{
+      text-align:right;
+      padding:10px 10px;
+      border-bottom:1px solid var(--line);
+    }
+
+    th:first-child, td:first-child{
+      text-align:left;
+    }
+
+    tbody tr:hover td{background:rgba(255,255,255,.03)}
+
+    .subnote{
+      padding:12px 14px 16px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .split{
+      display:grid;
+      grid-template-columns: 1fr;
+    }
+
+    .footer{
+      max-width:1200px;
+      margin:0 auto;
+      padding:8px 16px 24px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .mono{font-family:var(--mono)}
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.20);
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .dot{width:8px; height:8px; border-radius:999px; background:var(--accent)}
+
+    /* Assumptions panel */
+    details.assump{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(0,0,0,.18);
+      margin:10px 0;
+      overflow:hidden;
+    }
+    details.assump > summary{
+      cursor:pointer;
+      list-style:none;
+      padding:12px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      user-select:none;
+      color:var(--text);
+      font-family:var(--mono);
+      font-size:13px;
+    }
+    details.assump > summary::-webkit-details-marker{display:none}
+    details.assump[open] > summary{border-bottom:1px solid var(--line)}
+    .assump-body{padding:12px}
+    .assump-body p{margin:0 0 10px; color:var(--muted); font-size:12px}
+    .assump-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media (max-width: 720px){.assump-grid{grid-template-columns:1fr}}
+    .assump-box{border:1px solid var(--line); border-radius:12px; padding:10px; background:rgba(255,255,255,.02)}
+    .assump-box .h{font-size:12px; color:var(--muted); margin-bottom:8px}
+    .assump-box ul{margin:0; padding-left:18px; color:var(--text); font-size:12.5px; line-height:1.45}
+    .assump-box li{margin:6px 0}
+    .assump-kv{display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--mono); font-size:12.5px}
+    .assump-kv div{padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:rgba(0,0,0,.16)}
+    .assump-kv b{color:var(--text)}
+  </style>
 </head>
 <body>
-    <!-- Full content already included by user; preserving formatting as-is -->
+  <header>
+    <div class="row">
+      <div>
+        <h1>Startup DCF Valuation Calculator</h1>
+        <p>Browser-only, real-time 5-year DCF with LTV/CAC and terminal value.</p>
+      </div>
+      <div class="pill" id="statusPill">Ready</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Inputs -->
+    <section class="card">
+      <div class="card-h">
+        <div class="badge"><span class="dot"></span><span>Inputs</span></div>
+        <div class="pill">All local</div>
+      </div>
+      <div class="card-b">
+        <div class="grid">
+          <div>
+            <label for="currency">Currency</label>
+            <div class="field"><select id="currency">
+              <option value="USD" selected>USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="INR">INR (₹)</option>
+              <option value="JPY">JPY (¥)</option>
+            </select></div>
+          </div>
+          <div>
+            <label for="asOf">Valuation date</label>
+            <div class="field"><input id="asOf" type="date" /></div>
+          </div>
+
+          <div>
+            <label for="rev0">Current annual revenue</label>
+            <div class="field"><input id="rev0" type="number" min="0" step="1000" value="2000000" /></div>
+          </div>
+          <div>
+            <label for="growth">Revenue growth (YoY, %)</label>
+            <div class="field"><input id="growth" type="number" step="0.1" value="60" /></div>
+          </div>
+
+          <div>
+            <label for="grossMargin">Gross margin (%)</label>
+            <div class="field"><input id="grossMargin" type="number" step="0.1" value="75" /></div>
+          </div>
+          <div>
+            <label for="opexMargin">Operating expenses (% of revenue)</label>
+            <div class="field"><input id="opexMargin" type="number" step="0.1" value="55" /></div>
+          </div>
+
+          <div>
+            <label for="taxRate">Tax rate (%)</label>
+            <div class="field"><input id="taxRate" type="number" step="0.1" value="21" /></div>
+          </div>
+          <div>
+            <label for="capex">Capex (% of revenue)</label>
+            <div class="field"><input id="capex" type="number" step="0.1" value="3" /></div>
+          </div>
+
+          <div>
+            <label for="nwc">Δ Net working capital (% of revenue)</label>
+            <div class="field"><input id="nwc" type="number" step="0.1" value="2" /></div>
+          </div>
+          <div>
+            <label for="disc">Discount rate / WACC (%)</label>
+            <div class="field"><input id="disc" type="number" step="0.1" value="25" /></div>
+          </div>
+
+          <div>
+            <label for="termGrowth">Terminal growth (%)</label>
+            <div class="field"><input id="termGrowth" type="number" step="0.1" value="3" /></div>
+          </div>
+          <div>
+            <label for="shares">Diluted shares (optional)</label>
+            <div class="field"><input id="shares" type="number" min="0" step="1" value="0" /></div>
+          </div>
+
+          <div>
+            <label for="cash">Cash (optional)</label>
+            <div class="field"><input id="cash" type="number" min="0" step="1000" value="0" /></div>
+          </div>
+          <div>
+            <label for="debt">Debt (optional)</label>
+            <div class="field"><input id="debt" type="number" min="0" step="1000" value="0" /></div>
+          </div>
+
+          <div>
+            <label for="cac">CAC (per customer)</label>
+            <div class="field"><input id="cac" type="number" min="0" step="1" value="1200" /></div>
+          </div>
+          <div>
+            <label for="ltv">LTV (per customer)</label>
+            <div class="field"><input id="ltv" type="number" min="0" step="1" value="7200" /></div>
+          </div>
+
+          <div>
+            <label for="years">Projection years</label>
+            <div class="field">
+              <select id="years">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="7">7</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="growthDecay">Growth decay (pp/year)</label>
+            <div class="field"><input id="growthDecay" type="number" step="0.1" value="8" /></div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="resetBtn" type="button">Reset defaults</button>
+          <button id="exampleBtn" type="button">Load “SaaS-ish” example</button>
+          <button id="copyBtn" type="button">Copy shareable link</button>
+        </div>
+
+        <div class="help">
+          Notes: This is a simplified DCF. Operating expenses are modeled as a % of revenue (i.e., includes R&D + S&M + G&A).
+          NWC and Capex are modeled as % of revenue. Terminal value uses the Gordon growth model.
+        </div>
+      </div>
+    </section>
+
+    <!-- Outputs -->
+    <section class="card split">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="t">Enterprise value (DCF)</div>
+          <div class="v" id="ev">—</div>
+          <div class="s" id="evHint">PV of FCF + PV of terminal value</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Terminal value (PV)</div>
+          <div class="v" id="tv">—</div>
+          <div class="s" id="tvHint">Gordon growth</div>
+        </div>
+        <div class="kpi">
+          <div class="t">LTV / CAC</div>
+          <div class="v" id="ltvcac">—</div>
+          <div class="s" id="ltvcacHint">Rule of thumb: 3.0+ is strong</div>
+        </div>
+      </div>
+
+      <div class="card-b" style="padding:0">
+        <div style="padding:14px 14px 0" class="row">
+          <div class="badge"><span class="dot"></span><span>5-year projection</span></div>
+          <div class="pill" id="modelPill">Model: revenue → EBIT → NOPAT → FCF</div>
+        </div>
+        <div style="overflow:auto; max-height: 520px; border-top:1px solid var(--line); margin-top:12px">
+          <table id="table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Revenue</th>
+                <th>Gross profit</th>
+                <th>EBIT</th>
+                <th>NOPAT</th>
+                <th>Capex</th>
+                <th>ΔNWC</th>
+                <th>FCF</th>
+                <th>Disc. factor</th>
+                <th>PV(FCF)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="subnote" id="subnote">—</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Assumptions / Model Notes -->
+  <section class="card" style="max-width:1200px; margin:0 auto; padding:0; grid-column: 1 / -1;">
+    <div class="card-h" style="max-width:1200px; margin:0 auto;">
+      <div class="badge"><span class="dot"></span><span>Assumptions & Model Notes</span></div>
+      <div class="pill" id="assumpPill">Simplified unlevered DCF</div>
+    </div>
+    <div class="card-b" style="max-width:1200px; margin:0 auto;">
+      <p class="help" style="margin-top:0">
+        This calculator is intentionally simple (good for back-of-the-napkin valuation). Here’s exactly what the model assumes and how each line is computed.
+      </p>
+
+      <details class="assump" open>
+        <summary>
+          <span>What the model does</span>
+          <span class="pill">Revenue → EBIT → NOPAT → FCF → PV + Terminal</span>
+        </summary>
+        <div class="assump-body">
+          <div class="assump-grid">
+            <div class="assump-box">
+              <div class="h">Key assumptions (plain English)</div>
+              <ul>
+                <li><b>Revenue</b> grows annually from your current revenue by the selected growth rate.</li>
+                <li><b>Growth decay</b>: the growth rate decreases by <b>growth decay (pp/year)</b> each year, but never falls below <b>terminal growth</b>.</li>
+                <li><b>Gross profit</b> is <b>Revenue × Gross Margin</b>.</li>
+                <li><b>Opex</b> is a single bucket: <b>Revenue × Opex %</b> (includes R&D + S&M + G&A).</li>
+                <li><b>EBIT</b> = Gross profit − Opex.</li>
+                <li><b>Taxes</b> are applied only when EBIT is positive: <b>Taxes = max(0, EBIT) × Tax rate</b>.</li>
+                <li><b>NOPAT</b> = EBIT − Taxes.</li>
+                <li><b>Capex</b> and <b>ΔNWC</b> are modeled as % of revenue each year.</li>
+                <li><b>Unlevered FCF</b> = NOPAT − Capex − ΔNWC.</li>
+              </ul>
+            </div>
+            <div class="assump-box">
+              <div class="h">DCF + terminal value (formulas)</div>
+              <ul>
+                <li>Discount factor: <b>DF(t) = 1 / (1 + r)^t</b></li>
+                <li>Present value of FCF: <b>PV(FCF_t) = FCF_t × DF(t)</b></li>
+                <li>Terminal value (Gordon growth): <b>TV = FCF_N × (1 + g) / (r − g)</b></li>
+                <li>PV of terminal: <b>PV(TV) = TV × DF(N)</b></li>
+                <li>Enterprise value: <b>EV = Σ PV(FCF_t) + PV(TV)</b></li>
+                <li>Optional equity value: <b>Equity = EV + Cash − Debt</b></li>
+              </ul>
+              
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <details class="assump">
+            <summary>
+              <span>Current inputs (live)</span>
+              <span class="pill">auto-updates</span>
+            </summary>
+            <div class="assump-body">
+              <div class="assump-kv">
+                <div><span>Current revenue</span><br><b id="a_rev0">—</b></div>
+                <div><span>Year-1 growth</span><br><b id="a_growth">—</b></div>
+                <div><span>Growth decay</span><br><b id="a_decay">—</b></div>
+                <div><span>Gross margin</span><br><b id="a_gm">—</b></div>
+                <div><span>Opex %</span><br><b id="a_om">—</b></div>
+                <div><span>Tax rate</span><br><b id="a_tax">—</b></div>
+                <div><span>Capex %</span><br><b id="a_capex">—</b></div>
+                <div><span>ΔNWC %</span><br><b id="a_nwc">—</b></div>
+                <div><span>Discount rate (r)</span><br><b id="a_disc">—</b></div>
+                <div><span>Terminal growth (g)</span><br><b id="a_tg">—</b></div>
+                <div><span>Projection years</span><br><b id="a_years">—</b></div>
+                <div><span>LTV/CAC</span><br><b id="a_ltvcac">—</b></div>
+              </div>
+            </div>
+          </details>
+
+          <details class="assump">
+            <summary>
+              <span>What this model does NOT include</span>
+              <span class="pill">common caveats</span>
+            </summary>
+            <div class="assump-body">
+              <ul style="margin:0; padding-left:18px; color:var(--text); font-size:12.5px; line-height:1.45">
+                <li>No explicit <b>depreciation & amortization</b> (we treat Capex directly).</li>
+                <li>No detailed <b>unit economics funnel</b> (LTV and CAC are inputs; no churn/ARPA math).</li>
+                <li>No explicit <b>stock-based comp</b>, <b>option pool</b> changes, or dilution over time.</li>
+                <li>No multi-stage margin expansion (gross/opex are constant %s in this simplified version).</li>
+                <li>No probability weighting for scenarios (base/upside/downside).</li>
+              </ul>
+              
+            </div>
+          </details>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span class="mono">Tip:</span> You can share inputs via URL (the “Copy shareable link” button). Everything runs locally.
+  </div>
+
+  <script>
+    // -------------------------
+    // Utilities
+    // -------------------------
+    const $ = (id) => document.getElementById(id);
+
+    const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+
+    function toNum(x, fallback = 0){
+      const n = Number(x);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function pctToDec(p){ return toNum(p) / 100; }
+
+    function formatCurrency(value, currency){
+      // Keep it robust across browsers
+      const v = Number(value);
+      if(!Number.isFinite(v)) return '—';
+      try{
+        return new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency,
+          maximumFractionDigits: 0
+        }).format(v);
+      } catch {
+        // Fallback
+        const sym = ({USD:'$',EUR:'€',GBP:'£',INR:'₹',JPY:'¥'})[currency] || '$';
+        return sym + Math.round(v).toLocaleString();
+      }
+    }
+
+    function formatNumber(value, decimals = 2){
+      const v = Number(value);
+      if(!Number.isFinite(v)) return '—';
+      return v.toLocaleString(undefined, {maximumFractionDigits: decimals, minimumFractionDigits: decimals});
+    }
+
+    function warnPill(msg){
+      $('statusPill').textContent = msg;
+      $('statusPill').style.borderColor = 'rgba(247,201,72,.5)';
+      $('statusPill').style.color = 'var(--warn)';
+    }
+    function okPill(msg){
+      $('statusPill').textContent = msg;
+      $('statusPill').style.borderColor = 'rgba(255,255,255,.10)';
+      $('statusPill').style.color = 'var(--muted)';
+    }
+
+    // -------------------------
+    // Model
+    // -------------------------
+    function computeModel(inputs){
+      const {
+        rev0,
+        growth,
+        growthDecay,
+        grossMargin,
+        opexMargin,
+        taxRate,
+        capex,
+        nwc,
+        disc,
+        termGrowth,
+        years,
+        currency,
+        cash,
+        debt,
+        shares,
+        cac,
+        ltv
+      } = inputs;
+
+      // Convert
+      const gm = pctToDec(grossMargin);
+      const om = pctToDec(opexMargin);
+      const tr = pctToDec(taxRate);
+      const cap = pctToDec(capex);
+      const nw = pctToDec(nwc);
+      const r = pctToDec(disc);
+      const g = pctToDec(termGrowth);
+
+      const rows = [];
+      let revenue = rev0;
+      let growthRate = pctToDec(growth);
+      const decay = pctToDec(growthDecay); // as decimal, but input is pp/year
+
+      // Interpret growthDecay as percentage points per year
+      const decayPP = growthDecay / 100;
+
+      for(let t=1; t<=years; t++){
+        // Apply growth to get revenue for year t
+        revenue = revenue * (1 + growthRate);
+
+        const grossProfit = revenue * gm;
+        const opex = revenue * om;
+        const ebit = grossProfit - opex;
+
+        // Simple taxes: only on positive EBIT
+        const taxes = Math.max(0, ebit) * tr;
+        const nopat = ebit - taxes;
+
+        const capexVal = revenue * cap;
+        const nwcVal = revenue * nw;
+
+        // Simplified unlevered FCF
+        const fcf = nopat - capexVal - nwcVal;
+
+        const df = 1 / Math.pow(1 + r, t);
+        const pv = fcf * df;
+
+        rows.push({
+          year: t,
+          revenue,
+          grossProfit,
+          ebit,
+          nopat,
+          capex: capexVal,
+          nwc: nwcVal,
+          fcf,
+          df,
+          pv
+        });
+
+        // Decay growth for next year (never below terminal growth)
+        growthRate = Math.max(g, growthRate - decayPP);
+      }
+
+      const pvOfFCF = rows.reduce((s, x) => s + x.pv, 0);
+
+      // Terminal value: Gordon growth on final year's FCF
+      const fcfN = rows.length ? rows[rows.length - 1].fcf : 0;
+
+      let terminalValue = NaN;
+      if(r <= g){
+        terminalValue = Infinity;
+      } else {
+        terminalValue = (fcfN * (1 + g)) / (r - g);
+      }
+
+      const dfN = 1 / Math.pow(1 + r, years);
+      const pvTerminal = terminalValue * dfN;
+
+      const enterpriseValue = pvOfFCF + pvTerminal;
+      const equityValue = enterpriseValue + cash - debt;
+      const perShare = shares > 0 ? (equityValue / shares) : NaN;
+
+      const ltvcac = (cac > 0) ? (ltv / cac) : NaN;
+
+      // Basic sanity warnings
+      const warnings = [];
+      if(rev0 <= 0) warnings.push('Revenue should be > 0');
+      if(r <= 0) warnings.push('Discount rate should be > 0');
+      if(r <= g) warnings.push('Discount rate must be > terminal growth');
+
+      return {
+        rows,
+        pvOfFCF,
+        terminalValue,
+        pvTerminal,
+        enterpriseValue,
+        equityValue,
+        perShare,
+        ltvcac,
+        warnings,
+        currency
+      };
+    }
+
+    // -------------------------
+    // Rendering
+    // -------------------------
+    function render(model, inputs){
+      const {currency} = inputs;
+
+      // KPIs
+      $('ev').textContent = formatCurrency(model.enterpriseValue, currency);
+      $('tv').textContent = Number.isFinite(model.pvTerminal)
+        ? formatCurrency(model.pvTerminal, currency)
+        : '—';
+
+      const ratio = model.ltvcac;
+      $('ltvcac').textContent = Number.isFinite(ratio) ? formatNumber(ratio, 2) : '—';
+
+      // Color hint for LTV/CAC
+      const ratioEl = $('ltvcac');
+      ratioEl.classList.remove('good','warn','bad');
+      if(Number.isFinite(ratio)){
+        if(ratio >= 3) ratioEl.classList.add('good');
+        else if(ratio >= 1.5) ratioEl.classList.add('warn');
+        else ratioEl.classList.add('bad');
+      }
+
+      // Table
+      const tbody = $('table').querySelector('tbody');
+      tbody.innerHTML = '';
+
+      for(const r of model.rows){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>Y${r.year}</td>
+          <td>${formatCurrency(r.revenue, currency)}</td>
+          <td>${formatCurrency(r.grossProfit, currency)}</td>
+          <td>${formatCurrency(r.ebit, currency)}</td>
+          <td>${formatCurrency(r.nopat, currency)}</td>
+          <td>${formatCurrency(r.capex, currency)}</td>
+          <td>${formatCurrency(r.nwc, currency)}</td>
+          <td>${formatCurrency(r.fcf, currency)}</td>
+          <td>${formatNumber(r.df, 4)}</td>
+          <td>${formatCurrency(r.pv, currency)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      const pvFCF = formatCurrency(model.pvOfFCF, currency);
+      const tv = Number.isFinite(model.terminalValue) ? formatCurrency(model.terminalValue, currency) : '—';
+      const pvTV = Number.isFinite(model.pvTerminal) ? formatCurrency(model.pvTerminal, currency) : '—';
+
+      let note = `PV(FCF) = <b>${pvFCF}</b> · Terminal Value = <b>${tv}</b> · PV(Terminal) = <b>${pvTV}</b>`;
+
+      if(inputs.cash !== 0 || inputs.debt !== 0 || inputs.shares > 0){
+        const eq = formatCurrency(model.equityValue, currency);
+        note += ` · Equity Value (EV + Cash − Debt) = <b>${eq}</b>`;
+        if(inputs.shares > 0 && Number.isFinite(model.perShare)){
+          note += ` · Per-share ≈ <b>${formatCurrency(model.perShare, currency)}</b>`;
+        }
+      }
+
+      $('subnote').innerHTML = note;
+
+      // Status
+      if(model.warnings.length){
+        warnPill(model.warnings[0]);
+      } else {
+        okPill('Updated');
+      }
+
+      // Minor hint text
+      $('evHint').textContent = model.warnings.length ? model.warnings.join(' · ') : 'PV of FCF + PV of terminal value';
+
+      // Assumptions panel (live values)
+      const setText = (id, txt) => { const el = $(id); if(el) el.textContent = txt; };
+      setText('a_rev0', formatCurrency(inputs.rev0, currency));
+      setText('a_growth', `${formatNumber(inputs.growth, 1)}%`);
+      setText('a_decay', `${formatNumber(inputs.growthDecay, 1)} pp/yr`);
+      setText('a_gm', `${formatNumber(inputs.grossMargin, 1)}%`);
+      setText('a_om', `${formatNumber(inputs.opexMargin, 1)}%`);
+      setText('a_tax', `${formatNumber(inputs.taxRate, 1)}%`);
+      setText('a_capex', `${formatNumber(inputs.capex, 1)}%`);
+      setText('a_nwc', `${formatNumber(inputs.nwc, 1)}%`);
+      setText('a_disc', `${formatNumber(inputs.disc, 1)}%`);
+      setText('a_tg', `${formatNumber(inputs.termGrowth, 1)}%`);
+      setText('a_years', `${inputs.years}`);
+      setText('a_ltvcac', Number.isFinite(model.ltvcac) ? formatNumber(model.ltvcac, 2) : '—');
+
+      // Assumptions header pill
+      const pill = $('assumpPill');
+      if(pill){
+        pill.textContent = model.warnings.length ? 'Check assumptions' : 'Simplified unlevered DCF';
+      }
+    }
+
+    // -------------------------
+    // URL state (optional share)
+    // -------------------------
+    const DEFAULTS = {
+      currency: 'USD',
+      asOf: '',
+      rev0: 2000000,
+      growth: 60,
+      growthDecay: 8,
+      grossMargin: 75,
+      opexMargin: 55,
+      taxRate: 21,
+      capex: 3,
+      nwc: 2,
+      disc: 25,
+      termGrowth: 3,
+      years: 5,
+      shares: 0,
+      cash: 0,
+      debt: 0,
+      cac: 1200,
+      ltv: 7200,
+    };
+
+    const FIELDS = [
+      'currency','asOf','rev0','growth','growthDecay','grossMargin','opexMargin','taxRate','capex','nwc','disc','termGrowth','years','shares','cash','debt','cac','ltv'
+    ];
+
+    function getInputsFromUI(){
+      const obj = {};
+      for(const f of FIELDS){
+        const el = $(f);
+        const raw = el.value;
+        if(el.tagName === 'SELECT' || el.type === 'date') obj[f] = raw;
+        else obj[f] = toNum(raw);
+      }
+      // Normalize numeric where needed
+      obj.years = parseInt(obj.years, 10) || DEFAULTS.years;
+      return obj;
+    }
+
+    function setUIFromObject(obj){
+      for(const f of FIELDS){
+        if(obj[f] === undefined) continue;
+        const el = $(f);
+        el.value = String(obj[f]);
+      }
+    }
+
+    function encodeState(obj){
+      // keep URL shorter by only storing deltas from defaults
+      const params = new URLSearchParams();
+      for(const f of FIELDS){
+        const v = obj[f];
+        const d = DEFAULTS[f];
+        if(String(v) !== String(d) && v !== '' && v !== null && v !== undefined){
+          params.set(f, String(v));
+        }
+      }
+      return params.toString();
+    }
+
+    function decodeState(){
+      const params = new URLSearchParams(location.search);
+      const obj = {...DEFAULTS};
+      for(const f of FIELDS){
+        if(!params.has(f)) continue;
+        const el = $(f);
+        const raw = params.get(f);
+        if(el.tagName === 'SELECT' || el.type === 'date') obj[f] = raw;
+        else obj[f] = toNum(raw, DEFAULTS[f]);
+      }
+      obj.years = parseInt(obj.years, 10) || DEFAULTS.years;
+      return obj;
+    }
+
+    function updateURLFromUI(){
+      const inputs = getInputsFromUI();
+      const qs = encodeState(inputs);
+      const newUrl = qs ? `${location.pathname}?${qs}` : location.pathname;
+      history.replaceState({}, '', newUrl);
+    }
+
+    // -------------------------
+    // Main update loop
+    // -------------------------
+    function update(){
+      const inputs = getInputsFromUI();
+      const model = computeModel(inputs);
+      render(model, inputs);
+      updateURLFromUI();
+    }
+
+    function attachListeners(){
+      for(const f of FIELDS){
+        const el = $(f);
+        el.addEventListener('input', update);
+        el.addEventListener('change', update);
+      }
+
+      $('resetBtn').addEventListener('click', () => {
+        setUIFromObject(DEFAULTS);
+        // default valuation date: today
+        const today = new Date();
+        $('asOf').value = today.toISOString().slice(0,10);
+        update();
+      });
+
+      $('exampleBtn').addEventListener('click', () => {
+        setUIFromObject({
+          currency: 'USD',
+          rev0: 3500000,
+          growth: 80,
+          growthDecay: 12,
+          grossMargin: 78,
+          opexMargin: 62,
+          taxRate: 21,
+          capex: 4,
+          nwc: 1,
+          disc: 28,
+          termGrowth: 3,
+          years: 5,
+          shares: 20000000,
+          cash: 800000,
+          debt: 1500000,
+          cac: 1400,
+          ltv: 9800,
+        });
+        update();
+      });
+
+      $('copyBtn').addEventListener('click', async () => {
+        try{
+          await navigator.clipboard.writeText(location.href);
+          okPill('Link copied');
+        } catch {
+          warnPill('Copy failed (check browser permissions)');
+        }
+      });
+    }
+
+    // Init
+    (function init(){
+      // Set default date
+      const today = new Date();
+      $('asOf').value = today.toISOString().slice(0,10);
+
+      // Load state from URL if present
+      const initial = decodeState();
+      setUIFromObject(initial);
+      if(!initial.asOf) $('asOf').value = today.toISOString().slice(0,10);
+
+      attachListeners();
+      update();
+    })();
+  </script>
 </body>
 </html>
